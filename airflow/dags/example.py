@@ -1,5 +1,4 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.decorators import task
 from datetime import datetime, timedelta
@@ -22,7 +21,7 @@ with DAG(
     
     @task(task_id = "write_df_csv")
     def transform_xlsx_to_csv():
-        path = "/data/online_retail_II.xlsx"
+        path = "/data/online_retail.xlsx"
         print("Importing data")
         df = pd.read_excel(path)
         df.to_csv("/data/online_retail.csv", index = False)

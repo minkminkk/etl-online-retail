@@ -1,0 +1,33 @@
+services:
+  airflow:
+    container_name: airflow-container
+    build:
+      context: .
+    image: airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./airflow/logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:14.10-alpine3.18
+    container_name: postgres
+    volumes:
+      - ./pg-setup:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: online_retail
+      TZ: "Asia/Ho_Chi_Minh"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      retries: 5
+    restart: always
+    ports:
+      - "5432:5432"
