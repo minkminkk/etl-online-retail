@@ -1,5 +1,5 @@
 /* TABLE jobs
-Include basic information about job postings
+Include basic information about orders
 
 Columns:
     invoice_no [varchar(7)] PK: 6-digit number unique to each order. 
@@ -13,9 +13,10 @@ Columns:
     country [varchar]: Country where the customer resides.
 */
 
+CREATE SCHEMA IF NOT EXISTS retail;
 
-CREATE TABLE IF NOT EXISTS orders (
-    invoice_no VARCHAR(7) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS retail.orders (
+    invoice_no VARCHAR(7),
     stock_code VARCHAR(6),
     description VARCHAR,
     quantity SMALLINT,
@@ -23,4 +24,4 @@ CREATE TABLE IF NOT EXISTS orders (
     unit_price DECIMAL(8,2),
     customer_id CHAR(5),
     country VARCHAR
-)
+);
