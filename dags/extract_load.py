@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from sqlalchemy import create_engine
+import sqlalchemy.types as dtypes
 
 
 default_args = {
@@ -14,7 +15,7 @@ default_args = {
 }
 
 with DAG(
-    "data_ingestion",
+    dag_id = "data_ingestion",
     default_args = default_args,
     description = "Data extraction and ingestion to PostgreSQL database",
     schedule = timedelta(days=1),
@@ -34,8 +35,8 @@ with DAG(
         df = pd.read_csv(
             path,
             dtype = {
-                "Customer ID": "Int64"
-            }
+                "Customer ID": "Int32"
+            }   # Cast into Int32 to remove decimal points
         ) \
             .rename(
                 columns = {
@@ -50,12 +51,28 @@ with DAG(
                 }
             )
 
-        print(df["customer_id"].head(10))
-
         engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
-        df.to_sql("retail.orders", con = engine, if_exists = "replace", index = False)
-        
-
+        # Specify dtypes to avoid changing type
+        # https://stackoverflow.com/questions/53294611/pandas-to-sql-changing-datatype-in-database-table
+        df.to_sql(
+            name = "orders", 
+            schema = "retail", 
+            con = engine, 
+            if_exists = "replace", 
+            index = False,
+            dtype = {
+                "invoice_no": dtypes.VARCHAR(7),
+                "stock_code": dtypes.VARCHAR(),
+                "description": dtypes.VARCHAR(),
+                "quantity": dtypes.SMALLINT(),
+                "invoice_date": dtypes.TIMESTAMP(),
+                "unit_price": dtypes.DECIMAL(8,2),
+                "customer_id": dtypes.CHAR(5),
+                "country": dtypes.VARCHAR()
+            }
+        )   
     ingest = ingest_data()
     
     init_db >> ingest
+
+    #TODO: Clean data

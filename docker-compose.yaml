@@ -104,6 +104,7 @@ services:
       retries: 5
       start_period: 5s
     volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
       - ./data:/data
     restart: always
 
