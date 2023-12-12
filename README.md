@@ -8,7 +8,7 @@ This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an
 - Extracts and transforms a source `.csv` file from [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii).
 - Loads the transformed data into tables of a data warehouse.
 
-The data warehouse schema is designed following the Kimball's STAR schema with the available data from the source `.csv` file.
+The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.csv` file.
 
 ![Data warehouse schema](imgs/dwh_schema.png)
 
