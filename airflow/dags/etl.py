@@ -191,8 +191,8 @@ with DAG(
         )
         tbl_invoices = df[[
             "invoice_id",
-            "stock_code",
             "invoice_date",
+            "stock_code",
             "customer_id",
             "unit_price",
             "quantity"
