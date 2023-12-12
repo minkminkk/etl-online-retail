@@ -1,11 +1,6 @@
--- Refresh schema
--- DROP SCHEMA IF EXISTS retail;
+-- Create schema
 CREATE SCHEMA IF NOT EXISTS retail;
 
-DROP TABLE IF EXISTS retail.dim_customers CASCADE;
-DROP TABLE IF EXISTS retail.dim_products CASCADE;
-DROP TABLE IF EXISTS retail.dim_dates CASCADE;
-DROP TABLE IF EXISTS retail.fct_invoices CASCADE;
 
 -- Dimension Tables
 CREATE TABLE IF NOT EXISTS retail.dim_customers (
