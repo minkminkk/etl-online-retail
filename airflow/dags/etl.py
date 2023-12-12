@@ -10,10 +10,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy.types as dtypes
 
-# DataFrame cleaning utilities
-from utils.data_cleaning import *
-
-
 DIR_DATA = "/data"
 DIR_TEMP = "/opt/airflow/temp"
 
