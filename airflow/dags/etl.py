@@ -252,11 +252,11 @@ with DAG(
 
     # Clean up temp files (temporary approach as might affect
     # temp files of concurrently running DAGs)
-    # clean_up = BashOperator(
-    #     task_id = "clean_up",
-    #     bash_command = "rm -f /opt/airflow/temp/*",
-    #     trigger_rule = "all_done"
-    # )
+    clean_up = BashOperator(
+        task_id = "clean_up",
+        bash_command = "rm -f /opt/airflow/temp/*",
+        trigger_rule = "all_done"
+    )
 
 
     # Set dependencies
