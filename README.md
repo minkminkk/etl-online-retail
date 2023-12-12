@@ -15,7 +15,7 @@ The data warehouse schema is designed following the [Kimball's dimensional model
 ## 2. Technologies used
 
 - **Apache Airflow** for data orchestration.
-- **pandas** as the main data processing framework.
+- **pandas** as the main data processing library.
 - **Docker** and **Docker Compose** for the containerized approach.
 
 ## 3. Installation
