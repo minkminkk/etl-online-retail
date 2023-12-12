@@ -24,7 +24,7 @@ with DAG(
     default_args = default_args,
     description = "Data from csv file is extracted, \
         transformed, and loaded to PostgreSQL DWH",
-    schedule = timedelta(days=1),
+    schedule = None,
     start_date = datetime(2009, 1, 1),
     catchup = False,
     tags = ["ingestion"],
