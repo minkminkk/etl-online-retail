@@ -27,7 +27,7 @@ with DAG(
     schedule = None,
     start_date = datetime(2009, 1, 1),
     catchup = False,
-    tags = ["ingestion"],
+    tags = ["ingestion"]
 ) as dag:
 
     # Create tables with constraints    
