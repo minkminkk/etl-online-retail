@@ -260,5 +260,5 @@ with DAG(
 
 
     # Set dependencies
-    ini_clean >> st_dims >> l_dims >> st_fct >> l_fct
+    ini_clean >> st_dims >> l_dims >> st_fct >> l_fct >> clean_up
     init_db >> l_dims
