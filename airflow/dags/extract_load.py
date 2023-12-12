@@ -19,7 +19,7 @@ DIR_TEMP = "/opt/airflow/temp"
 
 default_args = {
     "depends_on_past": False,
-    "retries": 0,
+    "retries": 0,   # For easier run test, please enable in real applications
     "retry_delay": timedelta(minutes=5)
 }
 
@@ -117,7 +117,7 @@ with DAG(
         tbl_date.to_csv(f"{DIR_TEMP}/dim_dates.csv", index = False)
 
         # dim_customers
-        # Take most recent record of same customer_id
+        # Slowly changing dim, so take most recent record of same customer_id (type 1)
         tbl_customers = df[["customer_id", "country"]] \
             .loc[df["customer_id"] != "00000"] \
             .drop_duplicates(subset = "customer_id", keep = "last")
@@ -127,7 +127,7 @@ with DAG(
         )
 
         # dim_products
-        # Take most recent record of same stock_code
+        # Slowly changing dim, so take most recent record of same stock_code (type 1)
         tbl_products = df[["stock_code", "description"]] \
             .loc[df["stock_code"] != "00000"] \
             .drop_duplicates(subset = "stock_code", keep = "last")
@@ -171,18 +171,19 @@ with DAG(
 
 
     # Stage fact and bridge table
-    @task(task_id = "stage_fact_and_bridge")
-    def stage_fact_and_bridge():
+    @task(task_id = "stage_fact")
+    def stage_fact():
         # SQLAlchemy engine for df.read_sql()
         engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
         
-        # Get data frames: Match customer_id type of 2 df to string for stable join
+        # Get data frames: customer_id, stock_code inferred as int by pandas
+        # Therefore cast them to string type to facilitate pd.merge()
         df = pd.read_csv(
             f"{DIR_TEMP}/initial_cleaned.csv",
             dtype = {
                 "customer_id": "string",
                 "stock_code": "string"
-            }   # to use df.merge()
+            }
         )
         df_customers = pd.read_sql(
             sql = "SELECT * FROM retail.dim_customers;",
@@ -192,76 +193,72 @@ with DAG(
             sql = "SELECT * FROM retail.dim_products;",
             con = engine
         )
+        tbl_invoices = df[[
+            "invoice_id",
+            "stock_code",
+            "invoice_date",
+            "customer_id",
+            "unit_price",
+            "quantity"
+        ]]
 
-        # Stage fact table
-        tbl_invoices = df[["invoice_id", "invoice_date", "customer_id"]]
+        # Join stock_code, unit_price to dim tables to get respective dim_id
         tbl_invoices["customer_dim_id"] = tbl_invoices.merge(
             df_customers,
             how = "left",
             on = "customer_id"
         )["customer_dim_id"]
-        tbl_invoices = tbl_invoices \
-            .drop(columns = "customer_id") \
-            .drop_duplicates()
-        tbl_invoices.to_csv(
-            f"{DIR_TEMP}/fct_invoices.csv", 
-            index = False
-        )
-
-        # Stage bridge table
-        tbl_invoice_details = df[
-            ["invoice_id", "stock_code", "unit_price", "quantity"]
-        ]
-        tbl_invoice_details["product_dim_id"] = tbl_invoice_details.merge(
+        tbl_invoices["product_dim_id"] = tbl_invoices.merge(
             df_products,
             how = "left",
             on = "stock_code"
         )["product_dim_id"]
-        tbl_invoice_details = tbl_invoice_details.drop(columns = "stock_code")
-        tbl_invoice_details.to_csv(
-            f"{DIR_TEMP}/br_invoice_details.csv", 
+        tbl_invoices = tbl_invoices \
+            .drop(columns = ["customer_id", "stock_code"])
+        tbl_invoices.to_csv(
+            f"{DIR_TEMP}/fct_invoices.csv", 
             index = False
         )
-    st_fct_br = stage_fact_and_bridge()
+    st_fct = stage_fact()
 
 
     # Load fact and bridge table
-    @task(task_id = "load_fact_and_bridge")
-    def load_fact_and_bridge():
+    @task(task_id = "load_fact")
+    def load_fact():
         # SQLAlchemy engine for df.to_sql()
         engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
 
         # Load each dim table
-        for tbl in ["fct_invoices", "br_invoice_details"]:
-            df = pd.read_csv(
-                f"{DIR_TEMP}/{tbl}.csv"
-            )
-            df.to_sql(
-                name = tbl, 
-                schema = "retail",
-                con = engine,
-                if_exists = "append",
-                index = False,
-                dtype = {
-                    "invoice_id": dtypes.CHAR(6),
-                    "invoice_date": dtypes.DATE(),
-                    "customer_dim_id": dtypes.INTEGER(),
-                    "product_dim_id": dtypes.INTEGER(),
-                    "unit_price": dtypes.DECIMAL(8,2),
-                    "quantity": dtypes.SMALLINT(),
-                }
-            )
-    l_fct_br = load_fact_and_bridge()
+        df = pd.read_csv(
+            f"{DIR_TEMP}/fct_invoices.csv"
+        )
+        df.to_sql(
+            name = "fct_invoices", 
+            schema = "retail",
+            con = engine,
+            if_exists = "append",
+            index = False,
+            dtype = {
+                "invoice_id": dtypes.CHAR(6),
+                "product_dim_id": dtypes.INTEGER(),
+                "invoice_date": dtypes.DATE(),
+                "customer_dim_id": dtypes.INTEGER(),
+                "unit_price": dtypes.DECIMAL(8,2),
+                "quantity": dtypes.SMALLINT(),
+            }
+        )
+    l_fct = load_fact()
 
 
-    # Clean up temp files
-    clean_up = BashOperator(
-        task_id = "clean_up",
-        bash_command = "rm -f /opt/airflow/temp/*",
-        trigger_rule = "all_done"
-    )
+    # Clean up temp files (temporary approach as might affect
+    # temp files of concurrently running DAGs)
+    # clean_up = BashOperator(
+    #     task_id = "clean_up",
+    #     bash_command = "rm -f /opt/airflow/temp/*",
+    #     trigger_rule = "all_done"
+    # )
 
 
     # Set dependencies
-    ini_clean >> st_dims >> l_dims >> st_fct_br >> l_fct_br >> clean_up
+    ini_clean >> st_dims >> l_dims >> st_fct >> l_fct
     init_db >> l_dims

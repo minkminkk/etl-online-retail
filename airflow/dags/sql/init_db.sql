@@ -6,7 +6,6 @@ DROP TABLE IF EXISTS retail.dim_customers CASCADE;
 DROP TABLE IF EXISTS retail.dim_products CASCADE;
 DROP TABLE IF EXISTS retail.dim_dates CASCADE;
 DROP TABLE IF EXISTS retail.fct_invoices CASCADE;
-DROP TABLE IF EXISTS retail.br_invoice_details CASCADE;
 
 -- Dimension Tables
 CREATE TABLE IF NOT EXISTS retail.dim_customers (
@@ -34,16 +33,12 @@ CREATE TABLE IF NOT EXISTS retail.dim_dates (
 );
 
 
--- Fact & Bridge Tables
+-- Fact Table
 CREATE TABLE IF NOT EXISTS retail.fct_invoices (
-    invoice_id CHAR(6) PRIMARY KEY, 
-    invoice_date DATE REFERENCES retail.dim_dates (date),
-    customer_dim_id INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS retail.br_invoice_details (
-    invoice_id CHAR(6) REFERENCES retail.fct_invoices (invoice_id),
+    invoice_id CHAR(6), 
     product_dim_id INTEGER REFERENCES retail.dim_products (product_dim_id),
+    invoice_date DATE REFERENCES retail.dim_dates (date),
+    customer_dim_id INTEGER REFERENCES retail.dim_customers (customer_dim_id),
     unit_price DECIMAL(8,2) NOT NULL,
     quantity INTEGER NOT NULL
 );
