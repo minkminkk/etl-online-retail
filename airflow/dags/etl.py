@@ -213,7 +213,7 @@ with DAG(
         )
         tbl_invoices = df[[
             "invoice_id",
-            "invoice_date_id",
+            "invoice_date_dim_id",
             "stock_code",
             "customer_id",
             "unit_price",
@@ -259,7 +259,7 @@ with DAG(
             dtype = {
                 "invoice_id": dtypes.CHAR(6),
                 "product_dim_id": dtypes.INTEGER(),
-                "invoice_date_id": dtypes.INTEGER(),
+                "invoice_date_dim_id": dtypes.INTEGER(),
                 "customer_dim_id": dtypes.INTEGER(),
                 "unit_price": dtypes.DECIMAL(8,2),
                 "quantity": dtypes.SMALLINT(),
