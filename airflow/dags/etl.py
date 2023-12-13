@@ -27,7 +27,7 @@ with DAG(
     schedule = None,
     start_date = datetime(2009, 1, 1),
     catchup = False,
-    tags = ["ingestion"]
+    tags = ["etl"]
 ) as dag:
 
     # Create tables with constraints    
@@ -37,15 +37,13 @@ with DAG(
     )
 
 
-    # Initial cleaning of source data
+    # INITIAL CLEANING OF SOURCE DATA
     @task(task_id = "initial_clean")
     def initial_clean():
         # Cast customer ID column as Int32 to remove decimals
         df = pd.read_csv(
             f"{DIR_DATA}/online_retail.csv", 
             dtype = {"Customer ID": "Int32"},
-            parse_dates = ["InvoiceDate"],
-            date_format = "%Y-%m-%d %H:%M:%S"
         ) \
             .rename(    # Rename columns
                 columns = {
@@ -85,32 +83,26 @@ with DAG(
             (df["customer_id"].str.len() == 5) & (df["customer_id"].str.isdigit())
         ]
 
-        # Add date columns
-        df["year"] = df["invoice_date"].dt.year
-        df["month"] = df["invoice_date"].dt.month
-        df["day"] = df["invoice_date"].dt.day
-        df["day_of_week"] = df["invoice_date"].dt.day_of_week
-        df["invoice_date"] = df["invoice_date"].dt.date
+        # Process date columns into dimension ID
+        df["invoice_date_dim_id"] = df["invoice_date"] \
+            .str.split(" ", n = 1) \
+            .str[0] \
+            .str.replace("-", "") \
+            .astype("int")
+        df = df.drop(columns = "invoice_date")
 
         # Save as temp data
         df.to_csv(f"{DIR_TEMP}/initial_cleaned.csv", index = False)
     ini_clean = initial_clean()
 
 
-    # Read raw xlsx file into pd.DataFrame. Clean data. Write as cleaned csv.
+    # STAGE CLEANED DATA INTO DIMENSION TABLE DATA
     @task(task_id = "stage_dims")
     def stage_dims():
         df = pd.read_csv(
             f"{DIR_TEMP}/initial_cleaned.csv",
             dtype = {"customer_id": "string"}   # to use df.merge()
         )
-
-        # Stage db into tables in schema and write to csv files
-        # dim_dates
-        tbl_date = df[["invoice_date", "year", "month", "day", "day_of_week"]] \
-            .rename(columns = {"invoice_date": "date"}) \
-            .drop_duplicates()
-        tbl_date.to_csv(f"{DIR_TEMP}/dim_dates.csv", index = False)
 
         # dim_customers
         # Slowly changing dim, so take most recent record of same customer_id (type 1)
@@ -134,14 +126,49 @@ with DAG(
     st_dims = stage_dims()
 
 
-    # Load dims into DWH
+    # LOAD STAGED DIM DATA INTO DWH
     @task(task_id = "load_dims")
     def load_dims():
         # SQLAlchemy engine for df.to_sql()
         engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
 
         # Load each dim table
-        for tbl in ["dim_dates", "dim_customers", "dim_products"]:
+        # dim_dates will be generated using pandas (2008-2012)
+        df_date = pd.DataFrame(
+            data = {
+                "date": pd.date_range(
+                    start = "2008-01-01", 
+                    end = "2012-01-01",
+                    freq = "D"
+                )
+            }
+        )
+        df_date["date_dim_id"] = df_date["date"] \
+            .astype("string").str.replace("-","")
+        df_date["year"] = df_date["date"].dt.year
+        df_date["month"] = df_date["date"].dt.month
+        df_date["day"] = df_date["date"].dt.day
+        df_date["day_of_week"] = df_date["date"].dt.isocalendar().day
+        df_date["week"] = df_date["date"].dt.isocalendar().week
+        df_date.to_sql(
+            name = "dim_dates",
+            schema = "retail",
+            con = engine,
+            if_exists = "append",
+            index = False,
+            dtype = {
+                "date_dim_id": dtypes.INTEGER(),
+                "date": dtypes.DATE(),
+                "year": dtypes.SMALLINT(),
+                "month": dtypes.SMALLINT(),
+                "day": dtypes.SMALLINT(),
+                "day_of_week": dtypes.SMALLINT(),
+                "week": dtypes.SMALLINT()
+            }
+        )
+
+        # Other dim tables will be loaded from temp staging area
+        for tbl in ["dim_customers", "dim_products"]:
             df = pd.read_csv(
                 f"{DIR_TEMP}/{tbl}.csv"
             )
@@ -152,11 +179,6 @@ with DAG(
                 if_exists = "append",
                 index = False,
                 dtype = {
-                    "date": dtypes.DATE(),
-                    "year": dtypes.SMALLINT(),
-                    "month": dtypes.SMALLINT(),
-                    "day": dtypes.SMALLINT(),
-                    "day_of_week": dtypes.SMALLINT(),
                     "customer_id": dtypes.CHAR(5),
                     "country": dtypes.VARCHAR(),
                     "stock_code": dtypes.CHAR(5),
@@ -166,7 +188,7 @@ with DAG(
     l_dims = load_dims()
 
 
-    # Stage fact and bridge table
+    # STAGE FACT TABLE
     @task(task_id = "stage_fact")
     def stage_fact():
         # SQLAlchemy engine for df.read_sql()
@@ -191,7 +213,7 @@ with DAG(
         )
         tbl_invoices = df[[
             "invoice_id",
-            "invoice_date",
+            "invoice_date_id",
             "stock_code",
             "customer_id",
             "unit_price",
@@ -218,13 +240,13 @@ with DAG(
     st_fct = stage_fact()
 
 
-    # Load fact and bridge table
+    # LOAD FACT TABLE INTO DWH
     @task(task_id = "load_fact")
     def load_fact():
         # SQLAlchemy engine for df.to_sql()
         engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
 
-        # Load each dim table
+        # Load fact table
         df = pd.read_csv(
             f"{DIR_TEMP}/fct_invoices.csv"
         )
@@ -237,7 +259,7 @@ with DAG(
             dtype = {
                 "invoice_id": dtypes.CHAR(6),
                 "product_dim_id": dtypes.INTEGER(),
-                "invoice_date": dtypes.DATE(),
+                "invoice_date_id": dtypes.INTEGER(),
                 "customer_dim_id": dtypes.INTEGER(),
                 "unit_price": dtypes.DECIMAL(8,2),
                 "quantity": dtypes.SMALLINT(),
