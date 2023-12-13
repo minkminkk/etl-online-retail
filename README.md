@@ -9,10 +9,12 @@ This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an
 - Loads the transformed data into tables of a data warehouse.
 
 ![Airflow DAG](imgs/airflow_dag.png)
+*DAG of ETL pipeline*
 
 The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.csv` file.
 
 ![Data warehouse schema](imgs/dwh_schema.png)
+*Data warehouse schema*
 
 ## 2. Technologies used
 
@@ -68,6 +70,7 @@ After executing part `3.1`, upon accessing webserver, you will be prompted to lo
 You will be transferred to the main Airflow UI:
 
 ![The Airflow UI](imgs/airflow_ui.png)
+*Airflow UI*
 
 To run the DAG, just click on the "play" button on the `Actions` column.
 
