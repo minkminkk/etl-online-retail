@@ -8,6 +8,8 @@ This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an
 - Extracts and transforms a source `.csv` file from [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii).
 - Loads the transformed data into tables of a data warehouse.
 
+![Airflow DAG](imgs/airflow_dag.png)
+
 The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.csv` file.
 
 ![Data warehouse schema](imgs/dwh_schema.png)
@@ -68,3 +70,4 @@ You will be transferred to the main Airflow UI:
 ![The Airflow UI](imgs/airflow_ui.png)
 
 To run the DAG, just click on the "play" button on the `Actions` column.
+
