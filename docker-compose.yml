@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  airflow:
+    build: ./airflow
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "False"
+      AIRFLOW_CONN_POSTGRES_DEFAULT: "postgresql://airflow:airflow@postgres:5432/warehouse"
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/temp:/opt/airflow/temp
+      - ./data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+  
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: warehouse
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow", "-d", "warehouse"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    ports:
+      - "5432:5432"

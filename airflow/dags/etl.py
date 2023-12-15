@@ -10,8 +10,10 @@ import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy.types as dtypes
 
+# Global variables
 DIR_DATA = "/data"
 DIR_TEMP = "/opt/airflow/temp"
+CONN_STR = "postgresql://airflow:airflow@postgres:5432/warehouse"
 
 default_args = {
     "depends_on_past": False,
@@ -30,7 +32,7 @@ with DAG(
     tags = ["etl"]
 ) as dag:
 
-    # Create tables with constraints    
+    # CREATE SCHEMA AND TABLE    
     init_db = PostgresOperator(
         task_id = "init_db",
         sql = "sql/init_db.sql",
@@ -41,9 +43,12 @@ with DAG(
     @task(task_id = "initial_clean")
     def initial_clean():
         # Cast customer ID column as Int32 to remove decimals
-        df = pd.read_csv(
-            f"{DIR_DATA}/online_retail.csv", 
-            dtype = {"Customer ID": "Int32"},
+        df = pd.read_excel(
+            f"{DIR_DATA}/online_retail.xlsx", 
+            dtype = {
+                "Customer ID": "Int32",
+                "Invoice": "string" # parser cannot work properly
+            }
         ) \
             .rename(    # Rename columns
                 columns = {
@@ -57,14 +62,6 @@ with DAG(
                     "Country": "country"
                 }
             )
-        
-        # Drop duplicates
-        df = df.drop_duplicates() \
-            .dropna(
-                how = "all", 
-                subset = ["invoice_id", "quantity", "invoice_date", "unit_price"],
-        ) \
-            .sort_values(["invoice_id"])
         
         # Cast stock_code, customer_id into strings and fill default values for null
         df["stock_code"] = df["stock_code"].astype("string").fillna("00000")
@@ -84,11 +81,7 @@ with DAG(
         ]
 
         # Process date columns into dimension ID
-        df["invoice_date_dim_id"] = df["invoice_date"] \
-            .str.split(" ", n = 1) \
-            .str[0] \
-            .str.replace("-", "") \
-            .astype("int")
+        df["invoice_date_dim_id"] = df["invoice_date"].dt.strftime("%Y%m%d")
         df = df.drop(columns = "invoice_date")
 
         # Save as temp data
@@ -130,7 +123,7 @@ with DAG(
     @task(task_id = "load_dims")
     def load_dims():
         # SQLAlchemy engine for df.to_sql()
-        engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
+        engine = create_engine(CONN_STR)
 
         # Load each dim table
         # dim_dates will be generated using pandas (2008-2012)
@@ -143,8 +136,7 @@ with DAG(
                 )
             }
         )
-        df_date["date_dim_id"] = df_date["date"] \
-            .astype("string").str.replace("-","")
+        df_date["date_dim_id"] = df_date["date"].dt.strftime("%Y%m%d")
         df_date["year"] = df_date["date"].dt.year
         df_date["month"] = df_date["date"].dt.month
         df_date["day"] = df_date["date"].dt.day
@@ -192,7 +184,7 @@ with DAG(
     @task(task_id = "stage_fact")
     def stage_fact():
         # SQLAlchemy engine for df.read_sql()
-        engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
+        engine = create_engine(CONN_STR)
         
         # Get data frames: customer_id, stock_code inferred as int by pandas
         # Therefore cast them to string type to facilitate pd.merge()
@@ -244,7 +236,7 @@ with DAG(
     @task(task_id = "load_fact")
     def load_fact():
         # SQLAlchemy engine for df.to_sql()
-        engine = create_engine("postgresql://airflow:airflow@postgres:5432/")
+        engine = create_engine(CONN_STR)
 
         # Load fact table
         df = pd.read_csv(
@@ -268,7 +260,7 @@ with DAG(
     l_fct = load_fact()
 
 
-    # Clean up temp files (temporary approach as might affect
+    # CLEAN UP TEMP FILES (temporary approach as might affect
     # temp files of concurrently running DAGs)
     clean_up = BashOperator(
         task_id = "clean_up",
@@ -277,6 +269,6 @@ with DAG(
     )
 
 
-    # Set dependencies
+    # SET DEPENDENCIES
     ini_clean >> st_dims >> l_dims >> st_fct >> l_fct >> clean_up
     init_db >> l_dims
