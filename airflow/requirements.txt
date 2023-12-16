@@ -1,1 +1,6 @@
-openpyxl    # For handling excel (.xlsx) files
+# Airflow extra packages
+apache-airflow[pandas]
+apache-airflow[postgres]
+
+# For handling excel (.xlsx) files with pandas
+openpyxl

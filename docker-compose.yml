@@ -1,8 +1,15 @@
 version: "3.8"
 services:
   airflow:
-    build: ./airflow
-    environment:
+    build: 
+      context: ./airflow
+      # Args based on Airflow image
+      args:
+        INSTALL_MYSQL_CLIENT: "False"
+        INSTALL_MSSQL_CLIENT: "False"
+    # Environment variables based on Airflow doc
+    # (https://airflow.apache.org/docs/apache-airflow/stable/configurations-ref.html#)
+    environment:  
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
       AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "False"
@@ -34,3 +41,6 @@ services:
     restart: always
     ports:
       - "5432:5432"
+
+  # superset:
+  #   image: apache/superset
