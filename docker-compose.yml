@@ -9,13 +9,7 @@ services:
         INSTALL_MSSQL_CLIENT: "False"
     # Environment variables based on Airflow doc
     # (https://airflow.apache.org/docs/apache-airflow/stable/configurations-ref.html#)
-    environment:  
-      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
-      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "False"
-      AIRFLOW_CONN_POSTGRES_DEFAULT: "postgresql://airflow:airflow@postgres:5432/warehouse"
-      PYTHONDONTWRITEBYTECODE: 1
-      PYTHONUNBUFFERED: 1
+    env_file: ./.env  
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -41,6 +35,3 @@ services:
     restart: always
     ports:
       - "5432:5432"
-
-  # superset:
-  #   image: apache/superset
