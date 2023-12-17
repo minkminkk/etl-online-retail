@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   airflow:
     build: 
@@ -7,8 +8,6 @@ services:
       args:
         INSTALL_MYSQL_CLIENT: "False"
         INSTALL_MSSQL_CLIENT: "False"
-    # Environment variables based on Airflow doc
-    # (https://airflow.apache.org/docs/apache-airflow/stable/configurations-ref.html#)
     env_file: ./.env  
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -23,6 +22,8 @@ services:
   
   postgres:
     image: postgres:14-alpine
+    volumes:
+      - warehouse:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -35,3 +36,16 @@ services:
     restart: always
     ports:
       - "5432:5432"
+
+  superset:
+    build: ./superset
+    volumes:
+      - ./superset/superset.db:/app/superset_home/superset.db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8088:8088"
+
+volumes:
+  warehouse:

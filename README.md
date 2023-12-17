@@ -5,13 +5,13 @@ A mini ETL project.
 ## 1. About this project
 
 This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an online retail store which:
-- Extracts and transforms a source `.csv` file from [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii).
+- Extracts and transforms a source `.xlsx` file from [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii).
 - Loads the transformed data into tables of a data warehouse.
 
 ![Airflow DAG](imgs/airflow_dag.png)
 *DAG of ETL pipeline*
 
-The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.csv` file.
+The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.xlsx` file.
 
 ![Data warehouse schema](imgs/dwh_schema.png)
 *Data warehouse schema*
