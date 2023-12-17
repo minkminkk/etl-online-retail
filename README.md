@@ -1,6 +1,6 @@
 # etl-online-retail
 
-A mini ETL project.
+A mini end-to-end ETL project.
 
 ## 1. About this project
 
