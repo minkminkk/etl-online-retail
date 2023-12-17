@@ -6,7 +6,7 @@ FROM apache/superset:2.1.3
 RUN pip install --no-cache-dir psycopg2
 
 # Environment variables
-# (SECRET_KEY init at build time therefore use RUN instruction)
+# (SECRET_KEY init at build time therefore requires RUN instruction)
 RUN export SUPERSET_SECRET_KEY=$(openssl rand -base64 42)
 ENV SUPERSET_SECRET_KEY=$(SUPERSET_SECRET_KEY) \
     TALISMAN_ENABLED=False
