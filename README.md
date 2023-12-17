@@ -9,8 +9,8 @@ This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an
 - Loads the transformed data into tables of a data warehouse.
 - Includes a simple dashboard as a report.
 
-![Airflow DAG](imgs/airflow_dag.png)
-*DAG of ETL pipeline*
+![Data flow](imgs/data_flow.png)
+*Data flow*
 
 The data warehouse schema is designed following the [Kimball's dimensional modelling technique](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) with the available data from the source `.xlsx` file.
 
