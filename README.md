@@ -52,7 +52,7 @@ docker compose start
 - Airflow webserver: `localhost:8080`.
 - Superset webserver: `localhost:8088`.
 
-Note: Both webservers have the same login credential:
+**Note:** Both webservers have the same login credential:
 
 - Username: `admin`.
 - Password: `admin`.
@@ -88,7 +88,7 @@ To run the DAG, just click on the "play" button on the `Actions` column.
 
 ### 4.2. Visualization
 
-After running ETL pipeline, access Superset webserver (`localhost:8080`), login using credentials in part `3.2`. Then enter the available dashboard and see the visualization.
+Once the DAG finished, access Superset webserver (`localhost:8080`), login using credentials in part `3.2`. Then enter the available dashboard and see the visualization.
 
 ![Dashboard](imgs/dashboard.jpg)
 
