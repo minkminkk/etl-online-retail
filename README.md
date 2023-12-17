@@ -7,6 +7,7 @@ A mini ETL project.
 This project aims to implement a manual (i.e. no scheduling) ETL pipeline for an online retail store which:
 - Extracts and transforms a source `.xlsx` file from [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii).
 - Loads the transformed data into tables of a data warehouse.
+- Includes a simple dashboard as a report.
 
 ![Airflow DAG](imgs/airflow_dag.png)
 *DAG of ETL pipeline*
@@ -20,6 +21,7 @@ The data warehouse schema is designed following the [Kimball's dimensional model
 
 - **Apache Airflow** for data orchestration.
 - **pandas** as the main data processing library.
+- **Apache Superset** for data visualization.
 - **Docker** and **Docker Compose** for the containerized approach.
 
 ## 3. Installation
@@ -45,9 +47,17 @@ If you already have the containers set up and do not want to recreate containers
 docker compose start
 ```
 
-3. Then access Airflow webserver for usage at `localhost:8080`.
+### 3.2. Interfaces
 
-### 3.2. Tear down
+- Airflow webserver: `localhost:8080`.
+- Superset webserver: `localhost:8088`.
+
+Note: Both webservers have the same login credential:
+
+- Username: `admin`.
+- Password: `admin`.
+
+### 3.3. Tear down
 
 After you are done, if you want to simply stop containers, do:
 
@@ -65,7 +75,9 @@ docker compose down
 
 ## 4. Usage
 
-After executing part `3.1`, upon accessing webserver, you will be prompted to login. Type `airflow` in both username and password.
+### 4.1. Run ETL DAG
+
+After executing part `3.1`, upon accessing webserver, you will be prompted to login. Refer to part `3.2` for username and password.
 
 You will be transferred to the main Airflow UI:
 
@@ -74,3 +86,10 @@ You will be transferred to the main Airflow UI:
 
 To run the DAG, just click on the "play" button on the `Actions` column.
 
+### 4.2. Visualization
+
+After running ETL pipeline, access Superset webserver (`localhost:8080`), login using credentials in part `3.2`. Then enter the available dashboard and see the visualization.
+
+![Dashboard](imgs/dashboard.jpg)
+
+You can also create your own dashboards here too!
